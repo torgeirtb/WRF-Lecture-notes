@@ -111,6 +111,8 @@
 	\item Namelist.input (example)
 	\item Super-short on supercomputing
 	\item Interactive jobs and jobscripts
+	\item Example: Interactive node
+	\item Example: Jobscript
 \end{enumerate}
 \end{frame}
 
@@ -351,28 +353,22 @@ sf_urban_physics                    = 2,     2,     2,
 
 \begin{frame}[fragile, allowframebreaks=.9, t]{7. Super-short on supercomputing}
 Supercomputers are build up of individual computers referred to as \textit{nodes} or \textit{cores}. Super computers can be viewed as a large cluster of servers and storage interconnected by a network. The computers are typically run on the Linux operative system. 
-
 Supercomputers are fast because the nodes are working together on big problems that requires parallelization.  Each node has one or more processors. 
-
-
 Each Stallo-user has two main directories/disks
 \begin{itemize}
 	\item \texttt{home/<username>} : Maximum capacity of 200 GB. Files in this directory is backed up regularly. Good location for storing scripts, figures, etc. 
 	\item \texttt{global/work/<username>} Not backed up and the HPC team are allowed to remove files in this directory. This is where one should run simulations and store big files. 
 \end{itemize}
-
 Login and computational nodes
 \begin{itemize}
 	\item Login node: For small tasks like  manage directories and submitting jobs. Never run calculations on the login node, this will reduce the speed for all users on the login node. 
 	\item Computational nodes
 \end{itemize}
-
-
 For more info about Stallo, visit the HPC documentation web page \url{https://hpc-uit.readthedocs.io/en/latest/stallo/stallo.html}
 \end{frame}
 
-\begin{frame}[fragile, allowframebreaks=.9,t]{8. Interactive jobs and jobscripts}
-Calculations on Stallo is done by submitting jobs through a batch system that executes the job applications based on the available resources, like computational and time frame. Stallo's bach system is SLURM (Simple Linux Utility for Resource Management).
+\begin{frame}[fragile, allowframebreaks=1,t]{8. Interactive jobs and jobscripts}
+Calculations on Stallo is done by submitting jobs through a batch system that executes the job applications based on the available resources, like computational and time frame. Stallo's batch system is SLURM (Simple Linux Utility for Resource Management).
 
 To submit a job and get access to the computational nodes one need to sumit a job application. This is done either by submitting a jobscript, or by using a computational node.
 
@@ -381,12 +377,8 @@ The syntax for logging  into a computational node is:
 \begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
 srun --nodes=1 --ntasks-per-node=1 --time=00:10:00 --pty bash -i
 \end{lstlisting}
-The command prompt appears as the job has done queing and are being allocated the requested resources. 
-
-When logged in on a computational node  one can see the node id, typically \texttt{blasterdalen@c12-16}
-
+The command prompt appears as the job has done queing and are being allocated the requested resources. When logged in on a computational node  one can see the node id, typically \texttt{blasterdalen@c12-16}
 A jobscript is a shell script containing information of the resources required to run the job and a estimation of how long the job will last. 
-
 When submitting the jobscript (also for applying to a computational node) the job is queued until the resources are allocated. 
 \begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
 sbatch jobscript.sh
@@ -399,13 +391,75 @@ If the user needs to delete the job, this can be done by
 \begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
 scancel <job_id>
 \end{lstlisting}
-
-
 \end{frame}
 
-%Two directories \texttt{home/<username>} and \texttt{global/work/<username>}. The \texttt{home} directory has a maximum capacity of approximately 200 GB and the files are backed up regularly. The \texttt{global} directory is where one should run the simulations and store other big files, as a typical month of WRF simulation output consists of about 1.5 TB. 
-%
-%When logging into Stallo the user is logging into a login node. On this node one can light tasks as copy files and manage directories and files, but for computations one should log into a computational node or by sumitting a jobscript. 
+
+\begin{frame}[fragile, allowframebreaks=.95, t]{9. Example: Interactive node}
+\vskip .6 cm
+Make a MATLAB script that produces a output file 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+vi Matlabtestscript.m
+\end{lstlisting}
+Load MATLAB module (can check if module is avail by entering \texttt{module avail matlab})
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+module load MATLAB/2015a-loc
+\end{lstlisting}
+Log into a interactive node
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+srun --nodes=1 --ntasks-per-node=1 --time=00:10:00 --pty bash -i
+\end{lstlisting}
+Run the MATLAB script
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+matlab -nodisplay -nodesktop -r "Postprocessing"
+\end{lstlisting}
+Download figure to local host
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+scp <username>@stallo.uit.no:/<path to file>/<filename> .
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks=.95, t]{10. Example: Jobscript}
+This can also be done by submitting a jobscript, but first we have to make it:
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+vi ExampleJobscript.sh
+\end{lstlisting}
+And in the jobscript we write the commands that executes the MATLAB script:
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+#!/usr/bin/env bash
+#:--------------------------------------------------------------------------
+# Example-jobscript for sunmitting m-code
+#
+# 20.March.2018, Torgeir
+#:-------------------------------------------------------------------------- 
+
+#SBATCH --job-name=ExampleJobscript
+
+# Stallo account to charge
+#SBATCH -A <account id>
+
+# Computation resources; nodes and cores
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+
+# Runtime: d-hh:mm:ss  (set a bit higher than expected)
+#SBATCH --time 0-00:10:00
+
+# Load relevant modules
+module load MATLAB/2015a-loc
+
+# goes to the directory where the job was submitted
+cd $SLURM_SUBMIT_DIR
+
+matlab -nodisplay -nodesktop -r "Matlab_testscript"
+
+exit 0
+\end{lstlisting}
+And finally, we submit the job 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+sbatch ExampleJobscript.sh 
+\end{lstlisting}
+\end{frame}
+
 
 \begin{frame}[fragile,allowframebreaks=1, t]{References}
 \bibliographystyle{plainnat}

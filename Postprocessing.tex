@@ -1,0 +1,169 @@
+\documentclass{beamer}
+\usetheme{Boadilla}
+
+% ------ Basic packages -------
+%\usepackage[margin=1.2in]{geometry}	% smaller margins              
+\usepackage[utf8]{inputenc}			%for æ,ø,å on mac
+\usepackage{amsmath,amsfonts,amssymb,amsthm,mathtools} % for mathematics
+\usepackage{hyperref}					   % Clickable links to urls, internal and external references etc.
+\usepackage{fancyhdr}					  % trengs for topp- og bunntekster og sidetall
+\usepackage{pdfpages}					 % for å hente in pdf
+%\numberwithin{equation}{section} % sub-numbers for equations
+\usepackage{cite}								% For sitater og referanser
+
+% ------ Figures/graphic -----
+\usepackage{graphicx}						%Graphic package
+\usepackage{xcolor}
+\usepackage{multicol}						 % for multiple columns
+\usepackage[font=small,labelfont=bf,textfont=normal, format=hang]{caption}	% Configuration of captions
+\usepackage{subcaption,graphicx}
+\usepackage{wrapfig}  						% Wrap text around figures	
+\usepackage{float} 								% To place figures correctly
+\usepackage{color}							   % muliggjør farget tekst
+\usepackage{tcolorbox}					   % enables color boxes
+\definecolor{light-gray}{gray}{0.95} %the shade of grey that stack exchange uses
+\usepackage{multirow}						
+\usepackage{bm}									% usepackage bold symbols
+\usepackage{xspace}							 % trengs også for fete typer
+%\usepackage[square,sort]{natbib}				% For referanser i klamme-parenteser  
+\usepackage{cite}
+
+
+% -------- TikZ --------
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usetikzlibrary{matrix,chains,positioning,decorations.pathreplacing,arrows}
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=1.8cm, minimum height=1cm,text centered, draw=black, fill=blue!40]
+\tikzstyle{io} = [trapezium, trapezium left angle=80, trapezium right angle=100, minimum width=1cm, minimum height=1cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{process} = [rectangle, minimum width=2cm, minimum height=1cm, text centered, text width=2cm, draw=black, fill=blue!5]
+\tikzstyle{decision} = [diamond, minimum width=2cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+% -------- Embedded code ----------
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+	language=Matlab,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3
+}
+
+% Nye kommandoer/snarveier
+\newcommand{\pd}{\ensuremath{\partial}} 			 % <---------- Partial derivative
+\newcommand{\ul}{\ensuremath{\underline}} 			% <---------- underline for easier vector notation
+\newcommand{\D}{\mathrm{D}}							   % <---------- Material derivate
+\newcommand{\vb}{\bm {v}\xspace}						% <---------- bold,italic v
+\newcommand{\wb}{\bm {w}\xspace}					  % <---------- bold,italic w
+\newcommand{\ub}{\bm {u}\xspace}						% <---------- bold,italic u					
+\newcommand{\gb}{\bm {g}\xspace}					   % <---------- bold,italic g
+\newcommand{\rb}{\bm {r}\xspace}						 % <---------- bold,italic r
+\newcommand{\fb}{\bm {f}\xspace}						 % <---------- bold,italic f
+\newcommand{\Fb}{\bm {F}\xspace}						% <---------- bold,italic f
+\newcommand{\ib}{\bm {i}\xspace}						  % <---------- bold,italic i
+\newcommand{\jb}{\bm {j}\xspace}						  % <---------- bold,italic j
+\newcommand{\yb}{\bm {y}\xspace}						% <---------- bold,italic y
+\newcommand{\xb}{\bm {x}\xspace}						% <---------- bold,italic x
+\newcommand{\zb}{\bm {z}\xspace}						% <---------- bold,italic z
+\newcommand{\taub}{\bm {\tau}\xspace}				 % <---------- bold,italic tau
+\newcommand{\lambdb}{\bm {\lambda}\xspace}
+\newcommand{\til}{\ensuremath{\widetilde}} 		% <---------- tilde
+\newcommand{\mub}{\bm {\mu}\xspace}				% <---------- bold, italic mu	
+\newcommand{\h}{\ensuremath{\hat}} 					% <---------- hat
+\newcommand{\dr}{\mathrm{d}}								% <---------- derivate
+
+
+% Første side 
+\title{WRF Postprocessing}
+\subtitle{Dealing with the simulation data}
+\author{Torgeir Blæsterdalen}
+\institute{Department of Industrial Engineering, UiT-The Arctic University of Norway}
+\date{\today}
+
+
+
+% ------ Utseende og forside -----
+\begin{document}
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}{Lecture topics}
+\begin{enumerate}
+	\item[1] Extracting output variables
+	\item[2] Visualizing simulation data using MATLAB
+\end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile, allowframebreaks=1, t]{1. Extracting simulation output}
+As output-files from a WRF-simulation usually is quite big, it is necessary to extract only the variables of interest from a WRF-run. A typical outfile from a domain with grid spacing of 2000 m $\times$ 2000 m produces a outfile of the magnitude 50 GB. 
+A description of the variables, variable name, its units, etc. can be found by typing the command \texttt{ncdump -h <filename>}. 
+
+When developing a MATLAB script it can be useful to download a small outfile from WRF to test on a local machine.
+
+In MATLAB, a NetCDF-file can be inspected using the command \texttt{ncdisp}. The command for extracting a NetCDF variable is \texttt{ncread}, e.g. the line 
+\begin{lstlisting}[language=MATLAB]
+u  = ncread(<NetCDF-file>, 'U'); 
+\end{lstlisting}
+reads the variable $U$ ($x$-wind component). 
+
+A small excursion along the surface of sphere can be expressed 
+\begin{equation*}
+(\delta \xb,\delta \yb, \zb) = (r\delta \lambda \cos \vartheta_o, r\delta\vartheta, z),	
+\end{equation*} 
+where $r$ is the radius of the sphere, $\lambda$ is the longitude, and $\vartheta$ is the latitude. The subscript $o$ denotes the an arbitrary observational point. The excursion was done at constant altitude. 
+
+The distance from a point "$O$" to all WRF grid points can be expressed using the Pythagorean trigonometry 
+\begin{equation}
+d(i,j) = \Bigg(r^2\cos^2\bigg(\frac{\vartheta_o + \vartheta(i,j)}{2}\bigg)\big(\lambda_o-\lambda(i,j)\big)^2 + r^2\big(\vartheta_o - \vartheta(i,j)\big)^2 \Bigg)^{1/2}.
+\label{DistanceToGridPoints}
+\end{equation}
+Here $r$ is the radius of the Earth, the point "$O$" is at $(\lambda_o,\vartheta_o)$ and $(\lambda(i,j),\vartheta(i,j))$ denotes the WRF grid points.
+
+A pseudo-code for extracting an example-variable at the grid point closest to the point "$O$" calculated using Eq~\ref{DistanceToGridPoints} is given as a pseudo-code below.
+\begin{lstlisting}
+% Read variable from WRF output file
+variable = ncread('path to WRF output file', 'variable name');
+
+% Longitude and latitude of the site
+lon = 20.6804;
+lat = 69.1867;
+
+% Find the distance to all grid points
+for longitudes && latitudes in variable
+d(i, j) = ... 																	(Eq.1})
+end
+
+% Find the minimum distance to the Rieppi site
+[min_lon, min_lat] = find(minimum d(i,j));
+
+save('Save variable to file')
+\end{lstlisting}
+\end{frame}
+
+
+
+\begin{frame}{2. Visualizing simulation data using MATLAB}
+A very useful tool for map projetions in MATLAB is the mapping functions \texttt{m\_map}. This package can be downloaded from \url{https://www.eoas.ubc.ca/~rich/map.html}.
+
+
+\end{frame}
+
+
+
+
+\end{document}

@@ -1,0 +1,419 @@
+\documentclass[xcolor=table]{beamer}
+\usetheme{Boadilla}
+
+% ------ Basic packages -------
+%\usepackage[margin=1.2in]{geometry}	% smaller margins              
+\usepackage[utf8]{inputenc}			%for æ,ø,å on mac
+\usepackage{amsmath,amsfonts,amssymb,amsthm,mathtools} % for mathematics
+\usepackage{hyperref}					   % Clickable links to urls, internal and external references etc.
+\usepackage{pdfpages}					 % for å hente in pdf
+\usepackage{cite}								% For sitater og referanser
+\usepackage[square,sort]{natbib}	% Referansestil  
+
+% ------ Figures/graphic -----
+\usepackage{graphicx}					   %Graphic package
+\usepackage[table]{xcolor}				 % For coloured rows or columns in tables
+\usepackage[font=small,labelfont=bf,textfont=normal, format=hang]{caption}	% Configuration of captions
+\usepackage{subcaption,graphicx}
+\usepackage{verbatim,longtable}		% For lange tabeller over flere sider
+\usepackage{wrapfig}  						% Wrap text around figures	
+\usepackage{float} 								% To place figures correctly
+\usepackage{color}							   % muliggjør farget tekst
+\usepackage{tcolorbox}					   % enables color boxes
+\definecolor{light-gray}{gray}{0.95} %the shade of grey that stack exchange uses
+\usepackage{multirow}						
+\usepackage{bm}									% usepackage bold symbols
+\usepackage{xspace}							 % trengs også for fete typer
+
+% -------- TikZ --------
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usetikzlibrary{matrix,chains,positioning,decorations.pathreplacing,arrows}
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=1.8cm, minimum height=1cm,text centered, draw=black, fill=blue!40]
+\tikzstyle{io} = [trapezium, trapezium left angle=80, trapezium right angle=100, minimum width=1cm, minimum height=1cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{process} = [rectangle, minimum width=2cm, minimum height=1cm, text centered, text width=2cm, draw=black, fill=blue!5]
+\tikzstyle{decision} = [diamond, minimum width=2cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+% -------- Embedded code ----------
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+	language=Bash,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=4
+}
+
+% ------ Utseende og forside -----
+\title{WRF step-by-step}
+\subtitle{Testcase at Nygårdsfjellet}
+\author{Torgeir Blæsterdalen}
+\institute{Department of Industrial Engineering, UiT-The Arctic University of Norway}
+\date{\today}
+
+
+\begin{document}
+	\begin{frame}
+	\titlepage
+\end{frame}
+
+
+\begin{frame}{Lecture topics}
+\begin{enumerate}
+	\item[1] Running WRF on Stallo
+	\begin{itemize}
+		\item[1.1] Terrestrial data download
+		\item[1.2] Meteorological input data
+		\item[1.3] WPS
+		\item[1.4] Inspecting WPS
+		\item[1.4] WRF
+	\end{itemize}
+	\item[2] Monitoring jobs
+	\item[3] Inspecting simulation variables
+	\item[4] Summary of WRF configurations
+	\item[5] Some useful Unix/Linux commands
+	\item[6] Useful links
+\end{enumerate}
+\end{frame}
+
+
+\begin{frame}{1 Running WRF on Stallo}
+\framesubtitle{1.1 Terrestrial input data}
+Terrestrial data: Downloaded from the National Centre for Atmospheric Reseach (NCAR): \url{http://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html}
+
+\vskip 1 cm
+The complete  terrestrial dataset is large and it might be a good idea not to download, but to create a link to already existing terrestrial files on Stallo.  
+\end{frame}
+
+\begin{frame}[fragile, allowframebreaks=1, t]{1.2 Meteorological input data}
+Meteorological boundary conditions: In this case, ERA-Interim is used. Can also use f.ex. on-site measurements or remote sensing dataproducts. The ERA-Interim data used in this case has a temporal and spatial resolution of 6 hours and approximately 80 km at 60 vertical levels. 
+Procedure for downloading ERA-Interim data from the Research Data Archive. The user has to log in and register for data access. 
+The meteorological boudary conditions consists of both pressure files and surface variables. 
+\begin{enumerate}
+\item Go to \url{http://rda.ucar.edu/datasets/ds627.0/}
+\begin{itemize}
+\item Click data access and scroll to \textit{ERA Interim atmospheric model analysis interpolated to pressure levels}. Click \textit{Web File Listing}.
+\item Select \textit{Faceted Browse}.
+\end{itemize}
+\item
+\begin{itemize}
+\item  Select start and end date and time and select \textit{continue}.
+\item Choose \textit{on} for \textit{range selection}.
+\item Select all \texttt{ei.oper...}-variables
+\item Click on \textit{create a unix} file using \texttt{Wget}. 
+\end{itemize}
+The script will open in a new window.
+
+\item Log in to Stallo, make a directory for the met. input data and move into that directory
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+ssh -X <username>@stallo.uit.no
+mkdir <directory name>
+cd <directory name>
+\end{lstlisting}
+\item Create a empty file
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+vi MetDownload_Pressurelevels.sh 
+\end{lstlisting}
+and copy-paste the generated unix-script in the empty file. 
+\item Change the password to the one used at UCAR (line 19). Write the changes to the file and quit, hitting \texttt{esc}, then \texttt{:wq} (write and quit)
+\item Make it executable
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+chmod 777 MetDownload_Pressurelevels.sh
+\end{lstlisting}
+\item Log into a computational node and run the file
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+srun --nodes=1 --ntasks-per-node=1 --time=01:00:00 --pty bash -i
+./MetDownload_Pressurelevels.sh
+\end{lstlisting}
+Note: If the download does not work, try changing \texttt{Wget} to \texttt{cURL}.
+\end{enumerate}
+Re-run step 1-7, but select \textit{ERA Interim atmospheric model analysis for surface}. After running the file, all meteorological input files should be created and located in the same directory. 
+\end{frame}
+
+
+
+\begin{frame}[fragile, allowframebreaks=.95, t]{1.3 WPS}
+\begin{enumerate}
+	\item Edit \texttt{namelist.wps}. Remember to check:
+	\begin{itemize}
+		\item Number of domains: \texttt{max\_dom}
+		\item Start and end date
+		\item Check size of biggest domain: \texttt{dx} and \texttt{dy}
+		\item Path to terrestrial data: \texttt{geog\_data\_path}
+	\end{itemize}
+	\item Edit \texttt{namelist.input} (in the WRFV3 directory). Remember to check:
+	\begin{itemize}
+		\item Duration of the simulation, i.e. number of days, hours and minutes
+		\item Start and end date
+		\item How many timesteps one outfile should contain: \texttt{frames\_per\_outfile}
+		\item Timestep (remember the time step contraints)
+		\item Check size of both/all domains: \texttt{dx} and \texttt{dy}
+	\end{itemize}
+	\item Move to the jobscript directory and edit the WPS jobscript. Remember to change the path to the meteorological input data!
+\end{enumerate}
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+#!/bin/bash
+#:-------------------------------------------------------------------
+# Jobscript for running the WRF-preprocessing (WPS) system 
+# plus the real.exe program. 
+#
+# Last edite: 25.April.2018, Torgeir
+#:-------------------------------------------------------------------
+
+
+#:---- Estimated resources ----
+#SBATCH --job-name=WRFjobscript_testcase
+# Stallo account to charge
+#SBATCH -A uit-hin-002
+# Computation resources; nodes and cores
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+# Runtime: d-hh:mm:ss  (set a bit higher than expected)
+#SBATCH --time 0-01:00:00
+
+# Give priority to this job (requires shorter jobs than 4h, and is used for testing scripts)
+# SBATCH --qos=devel
+
+# Delete all loaded modules (for avoiding conflicts with previously loaded modules)
+module purge
+
+#:---- WPS ----
+# Move into the WPS directory and load modules
+cd /global/work/blasterdalen/WindCoE/WPS/
+# Load WPS modules 
+module load WPS/3.9.1-intel-2017a-dmpar
+
+# Run geogrid
+geogrid.exe
+
+# Make a soft-link to the data secription file (V-table)
+ln -sf ungrib/Variable_Tables/Vtable.ERA-interim.pl Vtable
+# Make a link to the GRIB data  (input meteorological files)
+./link_grib.csh /global/work/blasterdalen/WindCoE/MetInput/April19/ei.oper*
+# Run ungrib
+ungrib.exe
+
+# Run metgrid
+metgrid.exe
+
+#:---- WRF ----
+# Move to the WRFV3 directory and load WRF model
+cd /global/work/blasterdalen/WindCoE/WRFV3
+module load WRF/3.9.1-intel-2017a-dmpar
+
+# Make soft-links to the met.-files from the WPS directory
+ln -sf ../WPS/met_em.d0* .
+
+# Run real
+mpirun -np $SLURM_NTASKS real.exe
+
+exit 0
+\end{lstlisting}
+
+Run the jobscript using the command 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+	sbatch JobscriptWPS.sh
+\end{lstlisting}
+\end{frame}
+
+
+
+\begin{frame}[fragile, allowframebreaks=.99, t]{1.4 WRF}
+Edit the WRF jobscript. Make sure the walltime is set a bit higher than expected. Then submit the jobscript.
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+#!/bin/bash
+#:-------------------------------------------------------------------
+# Jobscript for running WRF-simulations 
+#
+# Last edite: 25.April.2018, Torgeir
+#:-------------------------------------------------------------------
+
+#:---- Estimated resources ----
+#SBATCH --job-name=WRF-simulation
+# Stallo account to charge
+#SBATCH -A uit-hin-002
+# Computation resources; nodes and cores
+#SBATCH --nodes=3
+#SBATCH --ntasks-per-node=14
+# Runtime: d-hh:mm:ss  (set a bit higher than expected)
+#SBATCH --time 0-03:00:00
+
+# Give priority to this job (requires shorter jobs than 4h, and is used for testing scripts)
+# SBATCH --qos=devel
+
+# Delete all loaded modules (for avoiding conflicts with previously loaded modules)
+module purge
+
+# Move to the WRFV3 directory and load WRF model
+cd /global/work/blasterdalen/WindCoE/WRFV3
+module load WRF/3.9.1-intel-2017a-dmpar
+
+# Run WRF
+mpirun -np $SLURM_NTASKS wrf.exe
+
+exit 0
+\end{lstlisting}
+
+\end{frame}
+
+
+
+
+
+\begin{frame}[fragile]{2. Monitoring jobs}
+One can check the job status by entering 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+squeue -u <username>
+\end{lstlisting}
+If the job is running, one will typically get something like 
+\begin{minipage}[c]{1.05\textwidth}
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+876314    normal WRFjobsc blasterd  R       1:43      3 c52-1,c53-[7-8]
+\end{lstlisting}
+\end{minipage}
+If necessary, a job can be deleted/removed by entering 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+scancel <jobid>
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile, allowframebreaks=.95, t]{3. Inspecting output files}
+Check if the job went as planned by investigating the log file from Stallo
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+less slurm-<job id>.out
+\end{lstlisting}
+The log file is located in the same directory as the jobscript (if not declared otherwise in the jobscript). The log file will contain information on running the executables and if they were successful or not, e.g. a part of the WPS log file will contain
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+%!  Successful completion of metgrid.      !
+%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+\end{lstlisting}
+NetCDF files can be examined using 
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+module load netCDF
+ncdump -h met_em.d02.2008-03-04_12:00:00.nc
+\end{lstlisting}
+
+Inspect files graphically using the \texttt{ncview} utility. This requires a X-window. For Unix, \texttt{XQuarts} is a good alternative. For Windows, \texttt{Xming}
+\begin{lstlisting}[backgroundcolor = \color{light-gray}, language=bash]
+module load ncview/2.1.7-intel-2016b
+ncview <filename>
+\end{lstlisting}
+
+\vskip 1 cm
+Example: Plotted below is a visualization of the simulation output from \texttt{geogrid.exe}, \texttt{metgrid.exe}, \texttt{real.exe} and \texttt{wrf.exe} for domain 2. 
+\begin{figure}[!htb]
+	\begin{subfigure}{0.49\textwidth} 
+		\centering
+		\includegraphics[width=.8\textwidth]{../../Figures/ncview_geo_em_d02}
+		\caption{Outfile from \texttt{geogrid.exe}}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=.8\textwidth]{../../Figures/ncview_met_em_d02}
+		\caption{Outfile from \texttt{metgrid.exe}}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth} 
+		\centering
+		\includegraphics[width=.8\textwidth]{../../Figures/ncview_wrfinput_d02}
+		\caption{Outfile from \texttt{real.exe}}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth} 
+		\centering
+		\includegraphics[width=.8\textwidth]{../../Figures/ncview_wrfout_d02}
+		\caption{Outfile from \texttt{wrf.exe}}
+	\end{subfigure}
+\end{figure}
+
+\end{frame}
+
+
+
+\begin{frame}[fragile, allowframebreaks=.9, t]{4. Summary of (some) WRF configurations}
+\rowcolors{1}{}{light-gray}
+\begin{longtable}{ p{4.1cm}  |  p{7cm}}
+\hline
+WRF model                           	& WRF V3.9.1                                                             \\
+WRF dynamical solver           	& ARW                                                                         \\
+Domains                             		& 2 telescoping nests                                    		  \\
+2-way nesting                       	& D01: False                                                              \\
+\rowcolor{light-gray}               & D02: True                                                              \\
+Domain grid spacing$^*$        & D01: dx = 15000 m, dy = 15000 m                	\\
+\rowcolor{white}                    	& D02:  dx = 5000 m, dy = 5000 m                         \\
+Map projection                      	& Polar stereographic                                                 \\
+Time step                           		& 80 seconds$^*$                                                   \\
+Frames per outfile 					 & 144 (for both domains)										\\
+Adaptive time step                  & False                                                                      \\
+Integration scheme                  & RK3                                                                        \\
+Advection scheme                    & 5th order advection                                            \\
+Temporal resolution of out-files    & 10 minutes intervals                                     \\
+Number of vertical levels$^*$       & 51 \\	% , see \figref{HeightCoordinates}.            \\
+Microphysics                        	& WSM5                                                                       \\
+SL scheme                           	& Monin Obhukhov                                                       \\
+Land-surface model                  & Noah Land-Surface model                                 \\
+PBL scheme                          	& MYJ, TKE scheme                                                    \\
+Cumulus                             		& Betts-Miller-Janic scheme                                                  \\
+Number of soil layers               & 4                                                                          \\
+Longwave radiation                  & New Goddard                                                                \\
+Shortwave radiation                 & New Goddard                                                                \\
+Urban physics                       	& Multi-layer BEP scheme (works only with the MYJ and BouLac PBL schemes)    \\
+Grid nudging (Newtonian relaxation) & No grid nudging                                                            \\
+Eddy coefficient option             & Horizontal Smagorinsky 1st order closure (recommended for real-data cases) \\
+Turbulence and mixing               & 2nd order diffusion term (recommended for real-data cases)                 \\
+Base-state sea level temperature    & 290 K  \\
+Vertical damping 						& On \\
+\hline
+\end{longtable}
+\end{frame}
+
+
+
+\begin{frame}[fragile]{5. Useful Unix/Linux commands}
+\begin{tabular}{p{4.5 cm} p{7	 cm}}
+\texttt{cd}										 & Change directory \\
+\texttt{chmod 777 <filename>} 	& Give permission to read, write and execute file/folder	\\
+\texttt{cost} 				  					& View account and core hours 											  \\
+\texttt{du -sh *} 								& List of elements in folder and how large they are \\
+\texttt{ll, ls}										& List of elements in directory \\
+\texttt{ln -sf <path/filename>}		& Create soft-link \\
+\texttt{mkdir}									& Make directory	\\
+\texttt{module avail}					  &  Check of module is available in the Stallo system 			\\	
+\texttt{mv}										& Move file		\\
+\texttt{ncdump -h <filename>}	& View specifications of NetCDF-file 	\\
+\texttt{pwd}									& Present work directory \\
+\texttt{rm, rmdir}							& Remove file or directory, respectively \\
+\texttt{scp}									 & Copy/download from remote to local host \\
+\texttt{squeue -u <username>}	& See status of the submitted job(s)
+\end{tabular}
+\end{frame}
+
+
+
+\begin{frame}{6. Useful links}
+\begin{itemize}
+\item WRF user 's guide:\\
+\url{http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_V3/contents.html}\\
+\item ARW technical note: (pdf-download)\\
+\url{http://opensky.ucar.edu/islandora/object/technotes:500}
+\item A link to the lecture notes and some uploaded files (like jobscripts and some post-processing scripts) can be viewed and downloaded from my GitHub-account at \\
+\url{https://github.com/torgeirtb?tab=repositories}
+\end{itemize}
+\end{frame}
+
+\end{document}
